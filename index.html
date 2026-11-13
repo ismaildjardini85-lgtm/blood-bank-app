@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة بنك الدم والمتبرعين | Blood Bank Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Tajawal & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'Inter', 'sans-serif'],
+                        mono: ['Inter', 'monospace'],
+                    },
+                    colors: {
+                        medical: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .ltr-num {
+            direction: ltr;
+            display: inline-block;
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .sync-dot::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 9999px;
+            background-color: #10b981;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 left-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Staff Profile / Name Setup Modal -->
+    <div id="staff-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 transform transition-all">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-medical-100 text-medical-600 flex items-center justify-center">
+                    <i data-lucide="user-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800">هوية الموظف / الزميل</h3>
+                    <p class="text-sm text-slate-500">يظهر اسمك لزملائك عند إضافة أو تعديل أي كيس دم</p>
+                </div>
+            </div>
+            
+            <form id="staff-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">اسم الموظف أو اللقب في العمل *</label>
+                    <input type="text" id="staff-name-input" required placeholder="مثال: د. أحمد / ممرض سليم" 
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none transition">
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
+                    <div class="font-bold text-slate-700 flex items-center gap-1">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+                        معرف الجلسة السحابية المشتركة:
+                    </div>
+                    <div id="display-uid" class="font-mono text-[11px] text-slate-500 break-all select-all">جاري الاتصال...</div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="close-staff-modal-btn" class="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium transition">إلغاء</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-medical-600 hover:bg-medical-700 text-white font-bold shadow-md shadow-medical-600/20 transition">حفظ الاسم</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add / Edit Donor Modal -->
+    <div id="donor-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full my-8 border border-slate-100 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-l from-medical-700 to-medical-600 px-6 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white/15 rounded-xl">
+                        <i data-lucide="droplet" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 id="modal-title" class="text-xl font-bold">تسجيل متبرع وكيس دم جديد</h2>
+                        <p class="text-medical-100 text-xs">تتم المزامنة فوراً مع جميع الزملاء المتصلين</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeDonorModal()" class="p-2 hover:bg-white/15 rounded-xl transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="donor-form" class="p-6 space-y-5">
+                <input type="hidden" id="edit-doc-id">
+
+                <!-- Prominent Bag Number Section -->
+                <div class="bg-medical-50/70 p-4 rounded-2xl border-2 border-medical-200/80 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="bagNumber" class="text-sm font-extrabold text-medical-900 flex items-center gap-1.5">
+                            <i data-lucide="tag" class="w-4 h-4 text-medical-600"></i>
+                            <span>رقم الكيس (Bag Number / ID)</span>
+                            <span class="text-medical-600">*</span>
+                        </label>
+                        <span id="bag-duplicate-warning" class="hidden text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                            <span>رقم الكيس مسجل مسبقاً!</span>
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="bagNumber" required placeholder="مثال: BAG-2026-001 أو 10452"
+                            class="w-full pl-4 pr-11 py-3.5 rounded-xl bg-white border-2 border-medical-300 focus:ring-4 focus:ring-medical-500/20 focus:border-medical-600 outline-none font-mono font-extrabold text-base text-slate-900 uppercase tracking-wider transition">
+                        <i data-lucide="hash" class="w-5 h-5 text-medical-600 absolute right-3.5 top-4"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">أدخل الرقم التسلسلي المدون على كيس الدم للتمييز والبحث السريع.</p>
+                </div>
+
+                <!-- Blood Type Selection -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                        زمرة الدم <span class="text-medical-600">*</span>
+                    </label>
+                    <div class="grid grid-cols-4 sm:grid-cols-8 gap-1.5" id="blood-type-selector">
+                        <!-- Radio buttons styled as selectable pills -->
+                        <label class="cursor-pointer">
+                            <input type="radio" name="bloodType" value="A+" class="peer sr-only" required>
+                            <div class="text-center py-2.5 rounded-xl border border-slate-200 font-extrabold text-sm peer-checked:bg-medical-600 peer-checked:text-white peer-checked:border-medical-600 hover:bg-slate-50 transition ltr-num w-full">A+</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="bloodType" value="A-" class="peer sr-only">
+                            <div class="text-center py-2.5 rounded-xl border border-slate-200 font-extrabold text-sm peer-checked:bg-medical-600 peer-checked:text-white peer-checked:border-medical-600 hover:bg-slate-50 transition ltr-num w-full">A-</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="bloodType" value="B+" class="peer sr-only">
+                            <div class="text-center py-2.5 rounded-xl border border-slate-200 font-extrabold text-sm peer-checked:bg-medical-600 peer-checked:text-white peer-checked:border-medical-600 hover:bg-slate-50 transition ltr-num w-full">B+</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="bloodType" value="B-" class="peer sr-only">
+                            <div class="text-center py-2.5 rounded-xl border border-slate-200 font-extrabold text-sm peer-checked:bg-medical-600 peer-checked:text-white peer-checked:border-medical-600 hover:bg-slate-50 transition ltr-num w-full">B-</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="bloodType" value="AB+" class="peer sr-only">
+                            <div class="text-center py-2.5 rounded-xl border border-slate-200 font-extrabold text-sm peer-checked:bg-medical-600 peer-checked:text-white peer-checked:border-medical-600 hover:bg-slate-50 transition ltr-num w-full">AB+</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="bloodType" value="AB-" class="peer sr-only">
+                            <div class="text-center py-2.5 rounded-xl border border-slate-200 font-extrabold text-sm peer-checked:bg-medical-600 peer-checked:text-white peer-checked:border-medical-600 hover:bg-slate-50 transition ltr-num w-full">AB-</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="bloodType" value="O+" class="peer sr-only">
+                            <div class="text-center py-2.5 rounded-xl border border-slate-200 font-extrabold text-sm peer-checked:bg-medical-600 peer-checked:text-white peer-checked:border-medical-600 hover:bg-slate-50 transition ltr-num w-full">O+</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="bloodType" value="O-" class="peer sr-only">
+                            <div class="text-center py-2.5 rounded-xl border border-slate-200 font-extrabold text-sm peer-checked:bg-medical-600 peer-checked:text-white peer-checked:border-medical-600 hover:bg-slate-50 transition ltr-num w-full">O-</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Row 2: Full Name & Phone -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                            الاسم الكامل للمتبرع <span class="text-medical-600">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="donorName" required placeholder="الاسم واللقب"
+                                class="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none">
+                            <i data-lucide="user" class="w-5 h-5 text-slate-400 absolute right-3 top-3.5"></i>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                            رقم الهاتف <span class="text-medical-600">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="tel" id="phone" required placeholder="0550 00 00 00"
+                                class="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none text-left font-mono" dir="ltr">
+                            <i data-lucide="phone" class="w-5 h-5 text-slate-400 absolute right-3 top-3.5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: Birth Date (with Age) & Residence -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="text-sm font-bold text-slate-700">
+                                تاريخ الازدياد <span class="text-medical-600">*</span>
+                            </label>
+                            <span id="calculated-age-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">العمر: -- سنة</span>
+                        </div>
+                        <div class="relative">
+                            <input type="date" id="birthDate" required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none text-slate-700">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                            مكان الإقامة (البلدية / الولاية) <span class="text-medical-600">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="residence" required placeholder="مثال: أدرار - حي 5 جويلية"
+                                class="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none">
+                            <i data-lucide="map-pin" class="w-5 h-5 text-slate-400 absolute right-3 top-3.5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 4: Donation Date & Notes -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">تاريخ التبرع</label>
+                        <input type="date" id="donationDate"
+                            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none text-slate-700">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">ملاحظات طبية / إضافية (اختياري)</label>
+                        <input type="text" id="notes" placeholder="مثال: تبرع طوعي / لصالح مريض..."
+                            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- Form Footer -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeDonorModal()" class="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold transition">
+                        إلغاء
+                    </button>
+                    <button type="submit" id="save-donor-btn" class="px-8 py-3 rounded-xl bg-medical-600 hover:bg-medical-700 text-white font-bold shadow-lg shadow-medical-600/25 flex items-center gap-2 transition">
+                        <i data-lucide="save" class="w-5 h-5"></i>
+                        <span>حفظ البيانات</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 text-center">
+            <div class="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">تأكيد حذف السجل</h3>
+            <p class="text-slate-600 text-sm mb-6">
+                هل أنت متأكد من رغبتك في حذف سجل المتبرع <strong id="delete-donor-name" class="text-slate-900"></strong> (كيس رقم: <span id="delete-bag-num" class="font-mono font-bold text-medical-600"></span>)؟
+                <br><span class="text-xs text-red-500 mt-1 block">سيتم حذفه من قاعدة البيانات المشتركة لدى جميع الزملاء.</span>
+            </p>
+            <div class="flex items-center justify-center gap-3">
+                <button type="button" onclick="closeDeleteModal()" class="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold transition">تراجع</button>
+                <button type="button" id="confirm-delete-btn" class="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-md shadow-red-600/20 transition">نعم، احذف السجل</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-medical-600 to-medical-700 text-white flex items-center justify-center shadow-md shadow-medical-600/20">
+                    <i data-lucide="heart-pulse" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">بنك الدم المركزي</h1>
+                        <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="relative w-2 h-2 rounded-full bg-emerald-500 sync-dot"></span>
+                            متصل أونلاين
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500">نظام إدارة المتبرعين والأكياس المشترك</p>
+                </div>
+            </div>
+
+            <!-- Right Actions: Staff Profile + Export + Add Button -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Staff Profile Pill -->
+                <button onclick="openStaffModal()" title="تغيير اسم الموظف" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/70 text-slate-700 text-xs sm:text-sm font-bold transition border border-slate-200/80">
+                    <i data-lucide="user-circle-2" class="w-4 h-4 text-medical-600"></i>
+                    <span id="header-staff-name" class="max-w-[110px] sm:max-w-[160px] truncate">موظف مناوب</span>
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-400"></i>
+                </button>
+
+                <!-- Export CSV Button -->
+                <button onclick="exportToCSV()" title="تصدير البيانات إلى ملف Excel / CSV" class="p-2.5 sm:px-3.5 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold flex items-center gap-1.5 transition shadow-sm">
+                    <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i>
+                    <span class="hidden md:inline">تصدير Excel</span>
+                </button>
+
+                <!-- Primary Add Donor Button -->
+                <button onclick="openAddDonorModal()" class="px-4 py-2.5 rounded-xl bg-medical-600 hover:bg-medical-700 text-white text-sm font-bold flex items-center gap-2 shadow-md shadow-medical-600/20 transition transform active:scale-95">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    <span>إضافة متبرع</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Statistics Dashboard -->
+        <section aria-label="إحصائيات بنك الدم">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2.5 sm:gap-3">
+                <!-- Total Bags Card -->
+                <div onclick="setBloodFilter('ALL')" class="col-span-2 sm:col-span-3 lg:col-span-1 bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-3.5 shadow-sm cursor-pointer hover:ring-2 hover:ring-slate-400 transition flex flex-row lg:flex-col items-center justify-between lg:justify-center text-center">
+                    <div class="flex items-center gap-2 lg:flex-col lg:gap-1">
+                        <span class="text-xs font-medium text-slate-300">إجمالي الأكياس</span>
+                    </div>
+                    <div id="stat-total" class="text-2xl sm:text-3xl font-black ltr-num mt-0 lg:mt-1">0</div>
+                </div>
+
+                <!-- 8 Blood Group Stat Cards -->
+                <div onclick="setBloodFilter('A+')" id="card-stat-A+" class="stat-card bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm cursor-pointer hover:border-medical-400 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-red-50 text-medical-700 ltr-num">A+</span>
+                    <span id="stat-A+" class="text-xl font-black text-slate-800 mt-1 ltr-num">0</span>
+                </div>
+
+                <div onclick="setBloodFilter('A-')" id="card-stat-A-" class="stat-card bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm cursor-pointer hover:border-medical-400 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-red-50 text-medical-700 ltr-num">A-</span>
+                    <span id="stat-A-" class="text-xl font-black text-slate-800 mt-1 ltr-num">0</span>
+                </div>
+
+                <div onclick="setBloodFilter('B+')" id="card-stat-B+" class="stat-card bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm cursor-pointer hover:border-medical-400 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 ltr-num">B+</span>
+                    <span id="stat-B+" class="text-xl font-black text-slate-800 mt-1 ltr-num">0</span>
+                </div>
+
+                <div onclick="setBloodFilter('B-')" id="card-stat-B-" class="stat-card bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm cursor-pointer hover:border-medical-400 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 ltr-num">B-</span>
+                    <span id="stat-B-" class="text-xl font-black text-slate-800 mt-1 ltr-num">0</span>
+                </div>
+
+                <div onclick="setBloodFilter('AB+')" id="card-stat-AB+" class="stat-card bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm cursor-pointer hover:border-medical-400 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 ltr-num">AB+</span>
+                    <span id="stat-AB+" class="text-xl font-black text-slate-800 mt-1 ltr-num">0</span>
+                </div>
+
+                <div onclick="setBloodFilter('AB-')" id="card-stat-AB-" class="stat-card bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm cursor-pointer hover:border-medical-400 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 ltr-num">AB-</span>
+                    <span id="stat-AB-" class="text-xl font-black text-slate-800 mt-1 ltr-num">0</span>
+                </div>
+
+                <div onclick="setBloodFilter('O+')" id="card-stat-O+" class="stat-card bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm cursor-pointer hover:border-medical-400 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 ltr-num">O+</span>
+                    <span id="stat-O+" class="text-xl font-black text-slate-800 mt-1 ltr-num">0</span>
+                </div>
+
+                <div onclick="setBloodFilter('O-')" id="card-stat-O-" class="stat-card bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm cursor-pointer hover:border-medical-400 transition flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 ltr-num">O-</span>
+                    <span id="stat-O-" class="text-xl font-black text-slate-800 mt-1 ltr-num">0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Filter Toolbar -->
+        <section class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-4">
+            <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+                <!-- Search Input -->
+                <div class="relative flex-1">
+                    <input type="text" id="search-input" placeholder="ابحث فوراً برقم الكيس (مثل 10452 أو BAG)، اسم المتبرع، رقم الهاتف، أو مكان الإقامة..."
+                        class="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-medical-500 focus:border-medical-500 outline-none text-sm transition">
+                    <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute right-3.5 top-3.5"></i>
+                    <button id="clear-search-btn" onclick="clearSearch()" class="hidden absolute left-3 top-3 text-slate-400 hover:text-slate-600 p-0.5">
+                        <i data-lucide="x-circle" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Quick Filter Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0" id="filter-pills">
+                    <button onclick="setBloodFilter('ALL')" data-filter="ALL" class="filter-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-medical-600 text-white whitespace-nowrap transition">
+                        الكل
+                    </button>
+                    <button onclick="setBloodFilter('A+')" data-filter="A+" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 ltr-num whitespace-nowrap transition">A+</button>
+                    <button onclick="setBloodFilter('A-')" data-filter="A-" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 ltr-num whitespace-nowrap transition">A-</button>
+                    <button onclick="setBloodFilter('B+')" data-filter="B+" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 ltr-num whitespace-nowrap transition">B+</button>
+                    <button onclick="setBloodFilter('B-')" data-filter="B-" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 ltr-num whitespace-nowrap transition">B-</button>
+                    <button onclick="setBloodFilter('AB+')" data-filter="AB+" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 ltr-num whitespace-nowrap transition">AB+</button>
+                    <button onclick="setBloodFilter('AB-')" data-filter="AB-" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 ltr-num whitespace-nowrap transition">AB-</button>
+                    <button onclick="setBloodFilter('O+')" data-filter="O+" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 ltr-num whitespace-nowrap transition">O+</button>
+                    <button onclick="setBloodFilter('O-')" data-filter="O-" class="filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 ltr-num whitespace-nowrap transition">O-</button>
+                </div>
+            </div>
+
+            <!-- Active Filter Status Bar -->
+            <div class="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+                <div>
+                    عرض <strong id="filtered-count" class="text-slate-800">0</strong> سجل من أصل <strong id="total-records-text" class="text-slate-800">0</strong>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="hidden sm:inline">مرتب حسب: الأحدث إضافة</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="bg-white rounded-2xl p-12 border border-slate-200/80 text-center space-y-3">
+            <div class="w-10 h-10 border-4 border-medical-200 border-t-medical-600 rounded-full animate-spin mx-auto"></div>
+            <p class="text-slate-600 font-bold">جاري مزامنة سجلات بنك الدم مع السحابة...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden bg-white rounded-2xl p-12 border border-slate-200/80 text-center space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                <i data-lucide="folder-open" class="w-8 h-8"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-slate-800">لا توجد سجلات مطابقة</h3>
+                <p class="text-sm text-slate-500 mt-1">لم يتم العثور على متبرعين أو أكياس دم مطابقة لبحثك الحالي.</p>
+            </div>
+            <button onclick="openAddDonorModal()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-medical-600 hover:bg-medical-700 text-white text-sm font-bold transition">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>إضافة أول متبرع الآن</span>
+            </button>
+        </div>
+
+        <!-- Desktop Table View -->
+        <section id="table-container" class="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-extrabold uppercase">
+                            <th class="py-3.5 px-4">رقم الكيس</th>
+                            <th class="py-3.5 px-4">الزمرة</th>
+                            <th class="py-3.5 px-4">اسم المتبرع</th>
+                            <th class="py-3.5 px-4">تاريخ الازدياد (العمر)</th>
+                            <th class="py-3.5 px-4">مكان الإقامة</th>
+                            <th class="py-3.5 px-4">رقم الهاتف</th>
+                            <th class="py-3.5 px-4">تاريخ التبرع / الموظف</th>
+                            <th class="py-3.5 px-4 text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="donors-table-body" class="divide-y divide-slate-100 text-sm">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Mobile Cards View -->
+        <section id="cards-container" class="md:hidden grid grid-cols-1 gap-3">
+            <!-- Cards injected via JS -->
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+            <div>نظام إدارة بنك الدم التعاوني • تحديث لحظي مشترك بين فريق العمل</div>
+            <div class="flex items-center gap-2">
+                <span>حالة المزامنة:</span>
+                <span id="sync-status-footer" class="font-bold text-emerald-600">نشطة ومتزامنة</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration & Initialization
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-blood-bank';
+
+        // Public Shared Collection Path (Rule 1)
+        const donorsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'blood_donors');
+
+        // Global App State
+        let currentUser = null;
+        let staffName = "موظف مناوب";
+        let allDonors = [];
+        let currentBloodFilter = 'ALL';
+        let currentSearchQuery = '';
+        let donorIdToDelete = null;
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Set Default Donation Date to Today
+        const todayISO = new Date().toISOString().split('T')[0];
+        document.getElementById('donationDate').value = todayISO;
+
+        // Toast Notification Helper
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const styles = {
+                success: 'bg-slate-900 text-white border-emerald-500',
+                error: 'bg-red-600 text-white border-red-800',
+                info: 'bg-blue-600 text-white border-blue-800'
+            };
+            const icons = {
+                success: 'check-circle-2',
+                error: 'alert-circle',
+                info: 'info'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border-r-4 ${styles[type]} transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i data-lucide="${icons[type]}" class="w-5 h-5 shrink-0"></i>
+                <span class="text-sm font-bold">${message}</span>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        };
+
+        // Calculate Age from Birth Date
+        function calculateAge(birthDateString) {
+            if (!birthDateString) return null;
+            const birthDate = new Date(birthDateString);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age >= 0 ? age : 0;
+        }
+
+        // Update Age Badge Live in Modal
+        document.getElementById('birthDate').addEventListener('change', (e) => {
+            const age = calculateAge(e.target.value);
+            const badge = document.getElementById('calculated-age-badge');
+            if (age !== null) {
+                badge.textContent = `العمر: ${age} سنة`;
+                badge.className = age >= 18 && age <= 65 
+                    ? 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700'
+                    : 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700';
+            } else {
+                badge.textContent = 'العمر: -- سنة';
+            }
+        });
+
+        // Authentication Flow (Rule 3: Auth before queries)
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth error:", error);
+                showToast("حدث خطأ في الاتصال بالخادم السحابي", "error");
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('display-uid').textContent = user.uid;
+                
+                // Set default friendly staff name if not set yet
+                if (staffName === "موظف مناوب") {
+                    staffName = `موظف #${user.uid.slice(0, 4).toUpperCase()}`;
+                    document.getElementById('header-staff-name').textContent = staffName;
+                }
+
+                // Start Real-time Listener after auth is verified
+                subscribeToDonors();
+            }
+        });
+
+        // Real-Time Firestore Subscription (Rule 2: Simple collection query, sort in memory)
+        function subscribeToDonors() {
+            if (!currentUser) return;
+
+            onSnapshot(donorsCollectionRef, (snapshot) => {
+                const donors = [];
+                snapshot.forEach((docSnap) => {
+                    donors.push({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    });
+                });
+
+                // Sort by createdAt descending in JS memory
+                donors.sort((a, b) => {
+                    const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.clientTimestamp || 0);
+                    const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.clientTimestamp || 0);
+                    return timeB - timeA;
+                });
+
+                allDonors = donors;
+                document.getElementById('loading-state').classList.add('hidden');
+                updateStatistics();
+                renderDonors();
+            }, (error) => {
+                console.error("Firestore subscription error:", error);
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('sync-status-footer').textContent = "خطأ في المزامنة";
+                document.getElementById('sync-status-footer').className = "font-bold text-red-600";
+                showToast("تعذر جلب البيانات من السحابة", "error");
+            });
+        }
+
+        // Update Top Statistics
+        function updateStatistics() {
+            const counts = {
+                'A+': 0, 'A-': 0,
+                'B+': 0, 'B-': 0,
+                'AB+': 0, 'AB-': 0,
+                'O+': 0, 'O-': 0
+            };
+
+            allDonors.forEach(d => {
+                if (counts.hasOwnProperty(d.bloodType)) {
+                    counts[d.bloodType]++;
+                }
+            });
+
+            document.getElementById('stat-total').textContent = allDonors.length;
+            document.getElementById('total-records-text').textContent = allDonors.length;
+
+            Object.keys(counts).forEach(type => {
+                const el = document.getElementById(`stat-${type}`);
+                if (el) el.textContent = counts[type];
+            });
+        }
+
+        // Blood Badge Color Helper
+        function getBloodBadgeClasses(type) {
+            if (type.startsWith('AB')) return 'bg-purple-100 text-purple-800 border-purple-200';
+            if (type.startsWith('A')) return 'bg-red-100 text-medical-800 border-red-200';
+            if (type.startsWith('B')) return 'bg-amber-100 text-amber-800 border-amber-200';
+            if (type.startsWith('O')) return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+            return 'bg-slate-100 text-slate-800 border-slate-200';
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, match => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[match]));
+        }
+
+        // Render Filtered Donors (Table + Mobile Cards)
+        function renderDonors() {
+            const query = currentSearchQuery.trim().toLowerCase();
+
+            const filtered = allDonors.filter(d => {
+                const matchesBlood = currentBloodFilter === 'ALL' || d.bloodType === currentBloodFilter;
+                if (!matchesBlood) return false;
+
+                if (!query) return true;
+
+                const bagMatch = (d.bagNumber || '').toLowerCase().includes(query);
+                const nameMatch = (d.donorName || '').toLowerCase().includes(query);
+                const phoneMatch = (d.phone || '').toLowerCase().includes(query);
+                const residenceMatch = (d.residence || '').toLowerCase().includes(query);
+                const bloodMatch = (d.bloodType || '').toLowerCase().includes(query);
+
+                return bagMatch || nameMatch || phoneMatch || residenceMatch || bloodMatch;
+            });
+
+            document.getElementById('filtered-count').textContent = filtered.length;
+
+            const emptyState = document.getElementById('empty-state');
+            const tableContainer = document.getElementById('table-container');
+            const cardsContainer = document.getElementById('cards-container');
+            const tableBody = document.getElementById('donors-table-body');
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                tableContainer.classList.add('md:hidden');
+                cardsContainer.innerHTML = '';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableContainer.classList.remove('md:hidden');
+
+            // Render Desktop Table Rows
+            tableBody.innerHTML = filtered.map(donor => {
+                const age = calculateAge(donor.birthDate);
+                const badgeClass = getBloodBadgeClasses(donor.bloodType);
+                const safeBag = escapeHTML(donor.bagNumber);
+                const safeName = escapeHTML(donor.donorName);
+                const safeRes = escapeHTML(donor.residence);
+                const safePhone = escapeHTML(donor.phone);
+                const safeStaff = escapeHTML(donor.updatedBy || donor.addedBy || 'غير محدد');
+                const safeNotes = escapeHTML(donor.notes);
+
+                return `
+                    <tr class="hover:bg-slate-50/90 transition group">
+                        <td class="py-3.5 px-4">
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-medical-50 border border-medical-200 text-medical-900 font-mono font-extrabold text-xs shadow-xs">
+                                <span class="text-medical-500 select-none">#</span>
+                                <span class="ltr-num">${safeBag}</span>
+                                <button type="button" onclick="copyText('${safeBag}', 'رقم الكيس')" title="نسخ رقم الكيس" class="mr-1 p-0.5 text-medical-500 hover:text-medical-800 hover:bg-medical-100 rounded transition">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center justify-center w-11 h-8 rounded-lg border font-extrabold text-sm ltr-num ${badgeClass}">
+                                ${escapeHTML(donor.bloodType)}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-slate-900">${safeName}</div>
+                            ${safeNotes ? `<div class="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]" title="${safeNotes}">${safeNotes}</div>` : ''}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-600">
+                            <div class="font-mono text-xs">${escapeHTML(donor.birthDate || '-')}</div>
+                            ${age !== null ? `<span class="text-[11px] font-bold text-slate-500">(${age} سنة)</span>` : ''}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-700 font-medium">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                                <span>${safeRes}</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-1.5">
+                                <a href="tel:${safePhone}" class="font-mono font-bold text-slate-800 hover:text-medical-600 ltr-num text-xs">${safePhone}</a>
+                                <button type="button" onclick="copyText('${safePhone}', 'رقم الهاتف')" title="نسخ رقم الهاتف" class="p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-500">
+                            <div class="font-mono">${escapeHTML(donor.donationDate || '-')}</div>
+                            <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                                <i data-lucide="user-check" class="w-3 h-3"></i>
+                                <span>${safeStaff}</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="openEditDonorModal('${donor.id}')" title="تعديل البيانات" class="p-2 rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="openDeleteModal('${donor.id}')" title="حذف السجل" class="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Render Mobile Cards
+            cardsContainer.innerHTML = filtered.map(donor => {
+                const age = calculateAge(donor.birthDate);
+                const badgeClass = getBloodBadgeClasses(donor.bloodType);
+                const safeBag = escapeHTML(donor.bagNumber);
+                const safeName = escapeHTML(donor.donorName);
+                const safeRes = escapeHTML(donor.residence);
+                const safePhone = escapeHTML(donor.phone);
+                const safeStaff = escapeHTML(donor.updatedBy || donor.addedBy || 'غير محدد');
+                const safeNotes = escapeHTML(donor.notes);
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm space-y-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl border-2 flex items-center justify-center font-black text-base ltr-num shrink-0 ${badgeClass}">
+                                    ${escapeHTML(donor.bloodType)}
+                                </div>
+                                <div>
+                                    <div class="inline-flex items-center gap-1.5 font-mono text-xs font-extrabold px-2.5 py-0.5 rounded-lg bg-medical-50 text-medical-900 border border-medical-200 mb-1">
+                                        <span class="text-medical-500">#</span>
+                                        <span class="ltr-num">${safeBag}</span>
+                                        <button type="button" onclick="copyText('${safeBag}', 'رقم الكيس')" class="mr-1 text-medical-600 hover:text-medical-800">
+                                            <i data-lucide="copy" class="w-3 h-3"></i>
+                                        </button>
+                                    </div>
+                                    <h3 class="font-bold text-slate-900 text-base leading-tight">${safeName}</h3>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openEditDonorModal('${donor.id}')" class="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="openDeleteModal('${donor.id}')" class="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <div>
+                                <span class="text-slate-400 block">تاريخ الازدياد:</span>
+                                <span class="font-bold text-slate-700 font-mono">${escapeHTML(donor.birthDate || '-')}</span>
+                                ${age !== null ? `<span class="text-slate-500">(${age} سنة)</span>` : ''}
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block">مكان الإقامة:</span>
+                                <span class="font-bold text-slate-700">${safeRes}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block">تاريخ التبرع:</span>
+                                <span class="font-bold text-slate-700 font-mono">${escapeHTML(donor.donationDate || '-')}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block">بواسطة:</span>
+                                <span class="font-bold text-slate-700">${safeStaff}</span>
+                            </div>
+                        </div>
+
+                        ${safeNotes ? `<p class="text-xs text-slate-600 bg-amber-50/70 px-3 py-2 rounded-lg border border-amber-100">${safeNotes}</p>` : ''}
+
+                        <div class="flex items-center justify-between pt-1">
+                            <a href="tel:${safePhone}" class="flex-1 ml-2 py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center gap-2 transition">
+                                <i data-lucide="phone-call" class="w-4 h-4"></i>
+                                <span class="ltr-num font-mono text-sm">${safePhone}</span>
+                            </a>
+                            <button type="button" onclick="copyText('${safePhone}', 'رقم الهاتف')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold flex items-center gap-1.5">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                                <span>نسخ</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // Filter & Search Handlers
+        window.setBloodFilter = function(bloodType) {
+            currentBloodFilter = bloodType;
+            
+            // Update filter buttons styling
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.filter === bloodType) {
+                    btn.className = 'filter-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-medical-600 text-white whitespace-nowrap transition shadow-sm';
+                } else {
+                    btn.className = 'filter-btn px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap transition';
+                }
+            });
+
+            // Highlight stat card
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.remove('ring-2', 'ring-medical-600', 'bg-medical-50/30');
+            });
+            if (bloodType !== 'ALL') {
+                const activeCard = document.getElementById(`card-stat-${bloodType}`);
+                if (activeCard) activeCard.classList.add('ring-2', 'ring-medical-600', 'bg-medical-50/30');
+        // Copy Text Helper (Using execCommand for iFrame compatibility)
+        window.copyText = function(text, label = 'النص') {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast(`تم نسخ ${label}: ${text}`, 'info');
+            } catch (err) {
+                showToast(`تعذر نسخ ${label}`, 'error');
+            }
+            document.body.removeChild(tempInput);
+        };
+
+        // Live Duplicate Bag Number Checker
+        const bagNumberInput = document.getElementById('bagNumber');
+        const bagDuplicateWarning = document.getElementById('bag-duplicate-warning');
+
+        function checkDuplicateBagNumber() {
+            const val = bagNumberInput.value.trim().toUpperCase();
+            const currentEditId = document.getElementById('edit-doc-id').value;
+            if (!val) {
+                bagDuplicateWarning.classList.add('hidden');
+                return false;
+            }
+            const isDuplicate = allDonors.some(d => d.id !== currentEditId && (d.bagNumber || '').toUpperCase() === val);
+            if (isDuplicate) {
+                bagDuplicateWarning.classList.remove('hidden');
+            } else {
+                bagDuplicateWarning.classList.add('hidden');
+            }
+            return isDuplicate;
+        }
+
+        bagNumberInput.addEventListener('input', checkDuplicateBagNumber);
+
+        // Donor Modal Handlers (Add & Edit)
+        const donorModal = document.getElementById('donor-modal');
+        const donorForm = document.getElementById('donor-form');
+
+        window.openAddDonorModal = function() {
+            donorForm.reset();
+            document.getElementById('edit-doc-id').value = '';
+            document.getElementById('modal-title').textContent = 'تسجيل متبرع وكيس دم جديد';
+            document.getElementById('donationDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('calculated-age-badge').textContent = 'العمر: -- سنة';
+            document.getElementById('calculated-age-badge').className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600';
+            bagDuplicateWarning.classList.add('hidden');
+            
+            donorModal.classList.remove('hidden');
+            donorModal.classList.add('flex');
+            setTimeout(() => bagNumberInput.focus(), 100);
+        };
+
+        window.openEditDonorModal = function(docId) {
+            const donor = allDonors.find(d => d.id === docId);
+            if (!donor) return;
+
+            document.getElementById('edit-doc-id').value = donor.id;
+            document.getElementById('modal-title').textContent = 'تعديل بيانات المتبرع والكيس';
+            document.getElementById('bagNumber').value = donor.bagNumber || '';
+            document.getElementById('donorName').value = donor.donorName || '';
+            document.getElementById('phone').value = donor.phone || '';
+            document.getElementById('birthDate').value = donor.birthDate || '';
+            document.getElementById('residence').value = donor.residence || '';
+            document.getElementById('donationDate').value = donor.donationDate || '';
+            document.getElementById('notes').value = donor.notes || '';
+
+            checkDuplicateBagNumber();
+
+            // Select radio button for bloodType
+            const radio = document.querySelector(`input[name="bloodType"][value="${donor.bloodType}"]`);
+            if (radio) radio.checked = true;
+
+            // Update age badge
+            const age = calculateAge(donor.birthDate);
+            const badge = document.getElementById('calculated-age-badge');
+            badge.textContent = age !== null ? `العمر: ${age} سنة` : 'العمر: -- سنة';
+
+            donorModal.classList.remove('hidden');
+            donorModal.classList.add('flex');
+        };
+
+        window.closeDonorModal = function() {
+            donorModal.classList.add('hidden');
+            donorModal.classList.remove('flex');
+        };
+
+        // Save Donor (Create or Update in Firestore)
+        donorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) {
+                showToast("يرجى الانتظار حتى يكتمل الاتصال بالسحابة", "error");
+                return;
+            }
+
+            const editId = document.getElementById('edit-doc-id').value;
+            const bagNumber = document.getElementById('bagNumber').value.trim().toUpperCase();
+            const bloodTypeInput = document.querySelector('input[name="bloodType"]:checked');
+            
+            if (!bloodTypeInput) {
+                showToast("يرجى اختيار زمرة الدم", "error");
+                return;
+            }
+
+            const donorData = {
+                bagNumber: bagNumber,
+                bloodType: bloodTypeInput.value,
+                donorName: document.getElementById('donorName').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                birthDate: document.getElementById('birthDate').value,
+                residence: document.getElementById('residence').value.trim(),
+                donationDate: document.getElementById('donationDate').value,
+                notes: document.getElementById('notes').value.trim(),
+                updatedBy: staffName,
+                updatedAt: serverTimestamp()
+            };
+
+            const saveBtn = document.getElementById('save-donor-btn');
+            saveBtn.disabled = true;
+            saveBtn.classList.add('opacity-70');
+
+            try {
+                if (editId) {
+                    // Update existing record
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'blood_donors', editId);
+                    await updateDoc(docRef, donorData);
+                    showToast("تم تحديث بيانات المتبرع بنجاح ومزامنتها", "success");
+                } else {
+                    // Check duplicate bag number warning (optional soft check)
+                    const duplicate = allDonors.some(d => d.bagNumber.toUpperCase() === bagNumber);
+                    if (duplicate) {
+                        showToast(`تنبيه: رقم الكيس ${bagNumber} مسجل مسبقاً، تم الحفظ مع ذلك`, "info");
+                    } else {
+                        showToast("تم تسجيل المتبرع وكيس الدم بنجاح", "success");
+                    }
+
+                    donorData.addedBy = staffName;
+                    donorData.addedByUid = currentUser.uid;
+                    donorData.createdAt = serverTimestamp();
+                    donorData.clientTimestamp = Date.now();
+
+                    await addDoc(donorsCollectionRef, donorData);
+                }
+                closeDonorModal();
+            } catch (error) {
+                console.error("Save error:", error);
+                showToast("حدث خطأ أثناء حفظ البيانات", "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('opacity-70');
+            }
+        });
+
+        // Delete Modal Handlers
+        const deleteModal = document.getElementById('delete-modal');
+
+        window.openDeleteModal = function(docId) {
+            const donor = allDonors.find(d => d.id === docId);
+            if (!donor) return;
+
+            donorIdToDelete = docId;
+            document.getElementById('delete-donor-name').textContent = donor.donorName;
+            document.getElementById('delete-bag-num').textContent = donor.bagNumber;
+
+            deleteModal.classList.remove('hidden');
+            deleteModal.classList.add('flex');
+        };
+
+        window.closeDeleteModal = function() {
+            donorIdToDelete = null;
+            deleteModal.classList.add('hidden');
+            deleteModal.classList.remove('flex');
+        };
+
+        document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+            if (!donorIdToDelete || !currentUser) return;
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'blood_donors', donorIdToDelete);
+                await deleteDoc(docRef);
+                showToast("تم حذف السجل نهائياً من قاعدة البيانات", "info");
+                closeDeleteModal();
+            } catch (error) {
+                console.error("Delete error:", error);
+                showToast("تعذر حذف السجل", "error");
+            }
+        });
+
+        // Staff Name Modal Handlers
+        const staffModal = document.getElementById('staff-modal');
+
+        window.openStaffModal = function() {
+            document.getElementById('staff-name-input').value = staffName;
+            staffModal.classList.remove('hidden');
+            staffModal.classList.add('flex');
+        };
+
+        document.getElementById('close-staff-modal-btn').addEventListener('click', () => {
+            staffModal.classList.add('hidden');
+            staffModal.classList.remove('flex');
+        });
+
+        document.getElementById('staff-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newName = document.getElementById('staff-name-input').value.trim();
+            if (newName) {
+                staffName = newName;
+                document.getElementById('header-staff-name').textContent = staffName;
+                showToast(`تم تحديث اسم الموظف إلى: ${staffName}`, 'success');
+            }
+            staffModal.classList.add('hidden');
+            staffModal.classList.remove('flex');
+        });
+
+        // Export to CSV / Excel with UTF-8 BOM for Arabic support
+        window.exportToCSV = function() {
+            if (allDonors.length === 0) {
+                showToast("لا توجد بيانات لتصديرها حالياً", "info");
+                return;
+            }
+
+            const headers = [
+                "رقم الكيس",
+                "زمرة الدم",
+                "اسم المتبرع",
+                "تاريخ الازدياد",
+                "العمر",
+                "مكان الإقامة",
+                "رقم الهاتف",
+                "تاريخ التبرع",
+                "الموظف المسؤول",
+                "ملاحظات"
+            ];
+
+            const rows = allDonors.map(d => [
+                `"${(d.bagNumber || '').replace(/"/g, '""')}"`,
+                `"${(d.bloodType || '').replace(/"/g, '""')}"`,
+                `"${(d.donorName || '').replace(/"/g, '""')}"`,
+                `"${(d.birthDate || '').replace(/"/g, '""')}"`,
+                `"${calculateAge(d.birthDate) ?? ''}"`,
+                `"${(d.residence || '').replace(/"/g, '""')}"`,
+                `"${(d.phone || '').replace(/"/g, '""')}"`,
+                `"${(d.donationDate || '').replace(/"/g, '""')}"`,
+                `"${(d.updatedBy || d.addedBy || '').replace(/"/g, '""')}"`,
+                `"${(d.notes || '').replace(/"/g, '""')}"`
+            ]);
+
+            const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.setAttribute("href", url);
+            link.setAttribute("download", `سجل_بنك_الدم_${dateStr}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast("تم تصدير ملف السجلات بنجاح", "success");
+        };
+
+        // Start Authentication
+        initAuth();
+    </script>
+</body>
+</html>
