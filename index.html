@@ -281,11 +281,11 @@
             <form id="loginForm">
                 <div class="form-group" style="margin-bottom: 15px; text-align: right;">
                     <label for="username">اسم المستخدم / Nom d'utilisateur</label>
-                    <input type="text" id="username" autocapitalize="none" required placeholder="اسم المستخدم">
+                    <input type="text" id="username" autocapitalize="none" required placeholder="ctsainsefra">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px; text-align: right;">
                     <label for="password">كلمة المرور / Mot de passe</label>
-                    <input type="password" id="password" required placeholder="كلمة المرور">
+                    <input type="password" id="password" required placeholder="cts2026">
                 </div>
                 <button type="submit" class="btn">دخول / Entrer</button>
                 <div id="loginError" class="error-msg">بيانات الدخول غير صحيحة!<br>Identifiants incorrects!</div>
@@ -392,8 +392,185 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const AUTH_USER = "ctsainsefra";       
-        const AUTH_PASS = "cts2026";   
-
         const firebaseConfig = {
-            apiKey
+            apiKey: "AIzaSyBfy7XI64ckRRc8JJp3th8WMGRua3XDP0s",
+            authDomain: "blooddonorsapp-f04e9.firebaseapp.com",
+            projectId: "blooddonorsapp-f04e9",
+            storageBucket: "blooddonorsapp-f04e9.firebasestorage.app",
+            messagingSenderId: "487349836740",
+            appId: "1:487349836740:web:755abe8d088bfa4669c291"
+        };
+
+        const loginForm = document.getElementById('loginForm');
+        const loginOverlay = document.getElementById('loginOverlay');
+        const mainApp = document.getElementById('mainApp');
+        const loginError = document.getElementById('loginError');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            loginOverlay.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            initApp();
+        }
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value.trim();
+
+            // التحقق المبسط والمباشر
+            if (u === "ctsainsefra" && p === "cts2026") {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                loginOverlay.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                initApp();
+            } else {
+                loginError.style.display = 'block';
+            }
+        });
+
+        logoutBtn.addEventListener('click', function() {
+            sessionStorage.removeItem('isLoggedIn');
+            location.reload();
+        });
+
+        function initApp() {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+
+            const donorForm = document.getElementById('donorForm');
+            const donorTableBody = document.getElementById('donorTableBody');
+            const searchInput = document.getElementById('searchInput');
+            const editIdInput = document.getElementById('editId');
+            const formTitle = document.getElementById('formTitle');
+            const submitBtn = document.getElementById('submitBtn');
+
+            let allDonors = [];
+
+            onSnapshot(collection(db, "donors"), (snapshot) => {
+                allDonors = [];
+                snapshot.forEach((docSnap) => {
+                    allDonors.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                allDonors.sort((a, b) => {
+                    let numA = parseInt(a.bagId.replace(/\D/g, '')) || 0;
+                    let numB = parseInt(b.bagId.replace(/\D/g, '')) || 0;
+                    if (numA === numB) {
+                        return a.bagId.localeCompare(b.bagId);
+                    }
+                    return numA - numB;
+                });
+
+                renderTable(allDonors);
+            });
+
+            function renderTable(data) {
+                donorTableBody.innerHTML = '';
+                if (data.length === 0) {
+                    donorTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">لا توجد بيانات مسجلة حالياً / Aucune donnée enregistrée</td></tr>`;
+                    return;
+                }
+
+                data.forEach((donor) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="number-text">${donor.bagId}</span></td>
+                        <td>${donor.donorName}</td>
+                        <td>${donor.patientName || '-'}</td>
+                        <td class="date-cell"><bdo dir="ltr">${donor.birthDate}</bdo></td>
+                        <td>${donor.location}</td>
+                        <td><strong>${donor.bloodGroup}</strong></td>
+                        <td><span class="number-text">${donor.phone}</span></td>
+                        <td class="date-cell"><bdo dir="ltr">${donor.donationDate}</bdo></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="actions-btn edit-btn" onclick="editDonor('${donor.id}')">تعديل / Modifier</button>
+                                <button class="actions-btn" onclick="deleteDonor('${donor.id}')">حذف / Supprimer</button>
+                            </div>
+                        </td>
+                    `;
+                    donorTableBody.appendChild(tr);
+                });
+            }
+
+            donorForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const donorData = {
+                    bagId: document.getElementById('bagId').value,
+                    donorName: document.getElementById('donorName').value,
+                    patientName: document.getElementById('patientName').value,
+                    birthDate: document.getElementById('birthDate').value,
+                    location: document.getElementById('location').value,
+                    bloodGroup: document.getElementById('bloodGroup').value,
+                    phone: document.getElementById('phone').value,
+                    donationDate: document.getElementById('donationDate').value
+                };
+
+                const currentEditId = editIdInput.value;
+
+                try {
+                    if (currentEditId) {
+                        await updateDoc(doc(db, "donors", currentEditId), donorData);
+                        alert("تم تحديث السجل بنجاح / Mis à jour avec succès");
+                        editIdInput.value = "";
+                        formTitle.innerText = "إضافة سجل جديد / Ajouter un Nouveau Enregistrement";
+                        submitBtn.innerText = "حفظ السجل / Enregistrer";
+                        submitBtn.classList.remove('btn-update');
+                    } else {
+                        await addDoc(collection(db, "donors"), donorData);
+                    }
+                    donorForm.reset();
+                } catch (error) {
+                    alert("حدث خطأ أثناء الحفظ: " + error.message);
+                }
+            });
+
+            window.editDonor = function(id) {
+                const donor = allDonors.find(d => d.id === id);
+                if, (donor) {
+                    editIdInput.value = donor.id;
+                    document.getElementById('bagId').value = donor.bagId || '';
+                    document.getElementById('donorName').value = donor.donorName || '';
+                    document.getElementById('patientName').value = donor.patientName || '';
+                    document.getElementById('birthDate').value = donor.birthDate || '';
+                    document.getElementById('location').value = donor.location || '';
+                    document.getElementById('bloodGroup').value = donor.bloodGroup || '';
+                    document.getElementById('phone').value = donor.phone || '';
+                    document.getElementById('donationDate').value = donor.donationDate || '';
+
+                    formTitle.innerText = "تعديل السجل / Modifier l'enregistrement";
+                    submitBtn.innerText = "تحديث السجل / Mettre à jour";
+                    submitBtn.classList.add('btn-update');
+                    
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+
+            window.deleteDonor = async function(id) {
+                if (confirm('هل أنت متأكد من حذف هذا السجل؟ / Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {
+                    try {
+                        await deleteDoc(doc(db, "donors", id));
+                    } catch (error) {
+                        alert("حدث خطأ أثناء الحذف: " + error.message);
+                    }
+                }
+            }
+
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase();
+                const filtered = allDonors.filter(donor => 
+                    donor.donorName.toLowerCase().includes(query) ||
+                    (donor.patientName && donor.patientName.toLowerCase().includes(query)) ||
+                    donor.bagId.toLowerCase().includes(query) ||
+                    donor.bloodGroup.toLowerCase().includes(query) ||
+                    donor.location.toLowerCase().includes(query)
+                );
+                renderTable(filtered);
+            });
+        }
+    </script>
+
+</body>
+</html>
