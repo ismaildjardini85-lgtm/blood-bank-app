@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة متبرعي الدم - آمن ومتزامن</title>
+    <title>نظام إدارة متبرعي الدم | Gestion des Donneurs de Sang</title>
     <style>
         :root {
             --primary-color: #c0392b;
@@ -116,6 +116,11 @@
             transition: border-color 0.2s;
         }
 
+        .ltr-input {
+            direction: ltr;
+            text-align: right;
+        }
+
         .form-group input:focus, .form-group select:focus {
             border-color: var(--primary-color);
         }
@@ -165,6 +170,11 @@
             padding: 12px 15px;
             text-align: right;
             border-bottom: 1px solid var(--border-color);
+        }
+
+        .ltr-cell {
+            direction: ltr;
+            text-align: right;
         }
 
         th {
@@ -223,67 +233,67 @@
 </head>
 <body>
 
-    <!-- شاشة تسجيل الدخول المحمية -->
+    <!-- شاشة تسجيل الدخول / Page de Connexion -->
     <div id="loginOverlay">
         <div class="login-card">
-            <h2>تسجيل الدخول للنظام</h2>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">الرجاء إدخال بيانات الاعتماد الخاصة بفريق العمل</p>
+            <h2>تسجيل الدخول / Connexion</h2>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">الرجاء إدخال بيانات الاعتماد للفريق<br><span style="font-size:0.8rem; color:#888;">Veuillez entrer les identifiants</span></p>
             <form id="loginForm">
                 <div class="form-group" style="margin-bottom: 15px; text-align: right;">
-                    <label for="username">اسم المستخدم</label>
-                    <input type="text" id="username" required placeholder="أدخل اسم المستخدم">
+                    <label for="username">اسم المستخدم / Nom d'utilisateur</label>
+                    <input type="text" id="username" required placeholder="اسم المستخدم">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px; text-align: right;">
-                    <label for="password">كلمة المرور</label>
-                    <input type="password" id="password" required placeholder="أدخل كلمة المرور">
+                    <label for="password">كلمة المرور / Mot de passe</label>
+                    <input type="password" id="password" required placeholder="كلمة المرور">
                 </div>
-                <button type="submit" class="btn">دخول</button>
-                <div id="loginError" class="error-msg">اسم المستخدم أو كلمة المرور غير صحيحة!</div>
+                <button type="submit" class="btn">دخول / Entrer</button>
+                <div id="loginError" class="error-msg">بيانات الدخول غير صحيحة!<br>Identifiants incorrects!</div>
             </form>
         </div>
     </div>
 
-    <!-- النظام الأساسي -->
+    <!-- النظام الأساسي / Application Principale -->
     <div class="container hidden" id="mainApp">
         <div class="top-bar">
-            <span>مرحباً بك، <strong>فريق العمل</strong></span>
-            <button class="logout-btn" id="logoutBtn">تسجيل الخروج</button>
+            <span>مرحباً، <strong>فريق العمل</strong> | Bienvenue, <strong>Équipe</strong></span>
+            <button class="logout-btn" id="logoutBtn">تسجيل الخروج / Déconnexion</button>
         </div>
 
         <header>
-            <h1>نظام إدارة متبرعي الدم</h1>
-            <p>سجل سحابي آمن ومشفر ومتزامن لحظياً</p>
+            <h1>نظام إدارة متبرعي الدم<br><span style="font-size: 1.2rem; font-weight: normal; color: #555;">Gestion des Donneurs de Sang</span></h1>
+            <p>سجل سحابي آمن ومشفر ومتزامن لحظياً | Registre cloud sécurisé et synchronisé</p>
         </header>
 
-        <!-- نموذج الإضافة -->
+        <!-- نموذج الإضافة / Formulaire d'ajout -->
         <div class="card">
-            <h2>إضافة سجل جديد</h2>
+            <h2>إضافة سجل جديد / Ajouter un Nouveau Enregistrement</h2>
             <form id="donorForm">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="bagId">رقم الكيس</label>
-                        <input type="text" id="bagId" required placeholder="مثال: BG-9921">
+                        <label for="bagId">رقم الكيس / N° de Poche</label>
+                        <input type="text" id="bagId" class="ltr-input" required placeholder="BG-9921">
                     </div>
                     <div class="form-group">
-                        <label for="donorName">اسم المتبرع الكامل</label>
-                        <input type="text" id="donorName" required placeholder="أدخل اسم المتبرع">
+                        <label for="donorName">اسم المتبرع الكامل / Nom du Donneur</label>
+                        <input type="text" id="donorName" required placeholder="اسم المتبرع">
                     </div>
                     <div class="form-group">
-                        <label for="patientName">اسم المريض المستفيد</label>
-                        <input type="text" id="patientName" required placeholder="أدخل اسم المريض">
+                        <label for="patientName">اسم المريض المستفيد / Nom du Patient</label>
+                        <input type="text" id="patientName" required placeholder="اسم المريض">
                     </div>
                     <div class="form-group">
-                        <label for="birthDate">تاريخ الازدياد (المتبرع)</label>
-                        <input type="date" id="birthDate" required>
+                        <label for="birthDate">تاريخ الازدياد (المتبرع) / Date de Naissance</label>
+                        <input type="date" id="birthDate" class="ltr-input" required>
                     </div>
                     <div class="form-group">
-                        <label for="location">مكان الإقامة</label>
-                        <input type="text" id="location" required placeholder="المدينة / الحي">
+                        <label for="location">مكان الإقامة / Lieu de Résidence</label>
+                        <input type="text" id="location" required placeholder="المدينة / Ville">
                     </div>
                     <div class="form-group">
-                        <label for="bloodGroup">زمرة الدم</label>
+                        <label for="bloodGroup">زمرة الدم / Groupe Sanguin</label>
                         <select id="bloodGroup" required>
-                            <option value="">اختر الزمرة</option>
+                            <option value="">اختر الزمرة / Choisir</option>
                             <option value="O+">O+</option>
                             <option value="O-">O-</option>
                             <option value="A+">A+</option>
@@ -295,41 +305,41 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="phone">رقم الهاتف</label>
-                        <input type="tel" id="phone" required placeholder="رقم الهاتف">
+                        <label for="phone">رقم الهاتف / N° de Téléphone</label>
+                        <input type="tel" id="phone" class="ltr-input" required placeholder="05xxxxxxxx">
                     </div>
                     <div class="form-group">
-                        <label for="donationDate">تاريخ التبرع</label>
-                        <input type="date" id="donationDate" required>
+                        <label for="donationDate">تاريخ التبرع / Date de Don</label>
+                        <input type="date" id="donationDate" class="ltr-input" required>
                     </div>
                 </div>
-                <button type="submit" class="btn" style="width: auto; padding: 10px 25px;">حفظ السجل</button>
+                <button type="submit" class="btn" style="width: auto; padding: 10px 25px;">حفظ السجل / Enregistrer</button>
             </form>
         </div>
 
-        <!-- جدول عرض المتبرعين والبحث -->
+        <!-- جدول السجلات والبحث / Table et Recherche -->
         <div class="card">
-            <h2>قائمة السجلات المسجلة</h2>
+            <h2>قائمة السجلات المسجلة / Liste des Enregistrements</h2>
             <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="ابحث بالاسم، المريض، رقم الكيس، أو زمرة الدم...">
+                <input type="text" id="searchInput" placeholder="ابحث بالاسم، المريض، رقم الكيس، أو زمرة الدم... / Rechercher...">
             </div>
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
                         <tr>
-                            <th>رقم الكيس</th>
-                            <th>اسم المتبرع</th>
-                            <th>اسم المريض</th>
-                            <th>تاريخ الازدياد</th>
-                            <th>مكان الإقامة</th>
-                            <th>زمرة الدم</th>
-                            <th>رقم الهاتف</th>
-                            <th>تاريخ التبرع</th>
-                            <th>الإجراءات</th>
+                            <th>رقم الكيس<br><span style="font-size:0.75rem; font-weight:normal;">N° Poche</span></th>
+                            <th>اسم المتبرع<br><span style="font-size:0.75rem; font-weight:normal;">Donneur</span></th>
+                            <th>اسم المريض<br><span style="font-size:0.75rem; font-weight:normal;">Patient</span></th>
+                            <th>تاريخ الازدياد<br><span style="font-size:0.75rem; font-weight:normal;">Naissance</span></th>
+                            <th>مكان الإقامة<br><span style="font-size:0.75rem; font-weight:normal;">Résidence</span></th>
+                            <th>زمرة الدم<br><span style="font-size:0.75rem; font-weight:normal;">Groupe</span></th>
+                            <th>رقم الهاتف<br><span style="font-size:0.75rem; font-weight:normal;">Téléphone</span></th>
+                            <th>تاريخ التبرع<br><span style="font-size:0.75rem; font-weight:normal;">Date Don</span></th>
+                            <th>الإجراءات<br><span style="font-size:0.75rem; font-weight:normal;">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody id="donorTableBody">
-                        <tr><td colspan="9" class="empty-state">جاري تحميل البيانات...</td></tr>
+                        <tr><td colspan="9" class="empty-state">جاري تحميل البيانات... / Chargement...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -406,22 +416,22 @@
             function renderTable(data) {
                 donorTableBody.innerHTML = '';
                 if (data.length === 0) {
-                    donorTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">لا توجد بيانات مسجلة حالياً.</td></tr>`;
+                    donorTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">لا توجد بيانات مسجلة حالياً / Aucune donnée enregistrée</td></tr>`;
                     return;
                 }
 
                 data.forEach((donor) => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${donor.bagId}</td>
+                        <td class="ltr-cell">${donor.bagId}</td>
                         <td>${donor.donorName}</td>
                         <td>${donor.patientName || '-'}</td>
-                        <td>${donor.birthDate}</td>
+                        <td class="ltr-cell">${donor.birthDate}</td>
                         <td>${donor.location}</td>
                         <td><strong>${donor.bloodGroup}</strong></td>
-                        <td>${donor.phone}</td>
-                        <td>${donor.donationDate}</td>
-                        <td><button class="actions-btn" onclick="deleteDonor('${donor.id}')">حذف</button></td>
+                        <td class="ltr-cell">${donor.phone}</td>
+                        <td class="ltr-cell">${donor.donationDate}</td>
+                        <td><button class="actions-btn" onclick="deleteDonor('${donor.id}')">حذف / Supprimer</button></td>
                     `;
                     donorTableBody.appendChild(tr);
                 });
@@ -450,7 +460,7 @@
             });
 
             window.deleteDonor = async function(id) {
-                if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
+                if (confirm('هل أنت متأكد من حذف هذا السجل؟ / Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {
                     try {
                         await deleteDoc(doc(db, "donors", id));
                     } catch (error) {
