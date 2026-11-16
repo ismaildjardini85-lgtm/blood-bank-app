@@ -157,6 +157,12 @@
             font-size: 1rem;
         }
 
+        /* تثبيت اتجاه الجدول بالكامل ليطابق الترتيب الصحيح من اليمين لليسار للأرقام والنصوص */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -164,6 +170,7 @@
             background-color: white;
             border-radius: 8px;
             overflow: hidden;
+            direction: rtl;
         }
 
         th, td {
@@ -172,11 +179,10 @@
             border-bottom: 1px solid var(--border-color);
         }
 
-        /* إصلاح جذري لعرض الأرقام بشكل صحيح ومنتظم تماماً */
-        .number-cell {
+        .number-text {
             direction: ltr;
             unicode-bidi: embed;
-            text-align: right;
+            display: inline-block;
         }
 
         th {
@@ -325,7 +331,7 @@
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="ابحث بالاسم، المريض، رقم الكيس، أو زمرة الدم... / Rechercher...">
             </div>
-            <div style="overflow-x: auto;">
+            <div class="table-container">
                 <table>
                     <thead>
                         <tr>
@@ -425,14 +431,14 @@
                 data.forEach((donor) => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td class="number-cell"><bdo dir="ltr">${donor.bagId}</bdo></td>
+                        <td><span class="number-text">${donor.bagId}</span></td>
                         <td>${donor.donorName}</td>
                         <td>${donor.patientName || '-'}</td>
-                        <td class="number-cell"><bdo dir="ltr">${donor.birthDate}</bdo></td>
+                        <td><span class="number-text">${donor.birthDate}</span></td>
                         <td>${donor.location}</td>
                         <td><strong>${donor.bloodGroup}</strong></td>
-                        <td class="number-cell"><bdo dir="ltr">${donor.phone}</bdo></td>
-                        <td class="number-cell"><bdo dir="ltr">${donor.donationDate}</bdo></td>
+                        <td><span class="number-text">${donor.phone}</span></td>
+                        <td><span class="number-text">${donor.donationDate}</span></td>
                         <td><button class="actions-btn" onclick="deleteDonor('${donor.id}')">حذف / Supprimer</button></td>
                     `;
                     donorTableBody.appendChild(tr);
