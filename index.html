@@ -125,36 +125,35 @@
 
         .password-wrapper {
             position: relative;
-            display: flex;
-            align-items: center;
+            width: 100%;
         }
 
         .password-wrapper input {
-            padding-left: 40px;
+            width: 100%;
+            padding-left: 45px;
             direction: ltr;
-            text-align: right;
+            text-align: left;
         }
 
         .toggle-password {
             position: absolute;
-            left: 10px;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
             background: none;
             border: none;
             cursor: pointer;
-            padding: 4px;
+            padding: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #666;
-        }
-
-        .toggle-password:hover {
-            color: var(--primary-color);
+            z-index: 10;
         }
 
         .ltr-input {
             direction: ltr;
-            text-align: right;
+            text-align: left;
         }
 
         .form-group input:focus, .form-group select:focus {
@@ -452,7 +451,8 @@
         const eyeIcon = document.getElementById('eyeIcon');
 
         // زر إظهار وإخفاء كلمة المرور
-        togglePasswordBtn.addEventListener('click', function() {
+        togglePasswordBtn.addEventListener('click', function(e) {
+            e.preventDefault();
             const isPassword = passwordInput.getAttribute('type') === 'password';
             passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
             
@@ -515,112 +515,4 @@
                 });
 
                 allDonors.sort((a, b) => {
-                    let numA = parseInt(a.bagId.replace(/\D/g, '')) || 0;
-                    let numB = parseInt(b.bagId.replace(/\D/g, '')) || 0;
-                    if (numA === numB) {
-                        return a.bagId.localeCompare(b.bagId);
-                    }
-                    return numA - numB;
-                });
-
-                renderTable(allDonors);
-            });
-
-            function renderTable(data) {
-                donorTableBody.innerHTML = '';
-                if (data.length === 0) {
-                    donorTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">لا توجد بيانات مسجلة حالياً / Aucune donnée enregistrée</td></tr>`;
-                    return;
-                }
-
-                data.forEach((donor) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><span class="number-text">${donor.bagId}</span></td>
-                        <td>${donor.donorName}</td>
-                        <td>${donor.patientName || '-'}</td>
-                        <td class="date-cell"><bdo dir="ltr">${donor.birthDate}</bdo></td>
-                        <td>${donor.location}</td>
-                        <td><strong>${donor.bloodGroup}</strong></td>
-                        <td><span class="number-text">${donor.phone}</span></td>
-                        <td class="date-cell"><bdo dir="ltr">${donor.donationDate}</bdo></td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="actions-btn edit-btn" onclick="editDonor('${donor.id}')">تعديل / Modifier</button>
-                                <button class="actions-btn" onclick="deleteDonor('${donor.id}')">حذف / Supprimer</button>
-                            </div>
-                        </td>
-                    `;
-                    donorTableBody.appendChild(tr);
-                });
-            }
-
-            donorForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const donorData = {
-                    bagId: document.getElementById('bagId').value,
-                    donorName: document.getElementById('donorName').value,
-                    patientName: document.getElementById('patientName').value,
-                    birthDate: document.getElementById('birthDate').value,
-                    location: document.getElementById('location').value,
-                    bloodGroup: document.getElementById('bloodGroup').value,
-                    phone: document.getElementById('phone').value,
-                    donationDate: document.getElementById('donationDate').value
-                };
-
-                const currentEditId = editIdInput.value;
-
-                try {
-                    if (currentEditId) {
-                        await updateDoc(doc(db, "donors", currentEditId), donorData);
-                        alert("تم تحديث السجل بنجاح / Mis à jour avec succès");
-                        editIdInput.value = "";
-                        formTitle.innerText = "إضافة سجل جديد / Ajouter un Nouveau Enregistrement";
-                        submitBtn.innerText = "حفظ السجل / Enregistrer";
-                        submitBtn.classList.remove('btn-update');
-                    } else {
-                        await addDoc(collection(db, "donors"), donorData);
-                    }
-                    donorForm.reset();
-                } catch (error) {
-                    alert("حدث خطأ أثناء الحفظ: " + error.message);
-                }
-            });
-
-            window.editDonor = function(id) {
-                const donor = allDonors.find(d => d.id === id);
-                if (donor) {
-                    editIdInput.value = donor.id;
-                    document.getElementById('bagId').value = donor.bagId || '';
-                    document.getElementById('donorName').value = donor.donorName || '';
-                    document.getElementById('patientName').value = donor.patientName || '';
-                    document.getElementById('birthDate').value = donor.birthDate || '';
-                    document.getElementById('location').value = donor.location || '';
-                    document.getElementById('bloodGroup').value = donor.bloodGroup || '';
-                    document.getElementById('phone').value = donor.phone || '';
-                    document.getElementById('donationDate').value = donor.donationDate || '';
-
-                    formTitle.innerText = "تعديل السجل / Modifier l'enregistrement";
-                    submitBtn.innerText = "تحديث السجل / Mettre à jour";
-                    submitBtn.classList.add('btn-update');
-                    
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-            }
-
-            window.deleteDonor = async function(id) {
-                if (confirm('هل أنت متأكد من حذف هذا السجل؟ / Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {
-                    try {
-                        await deleteDoc(doc(db, "donors", id));
-                    } catch (error) {
-                        alert("حدث خطأ أثناء الحذف: " + error.message);
-                    }
-                }
-            }
-
-            searchInput.addEventListener('input', function(e) {
-                const query = e.target.value.toLowerCase();
-                const filtered = allDonors.filter(donor => 
-                    donor.donorName.toLowerCase().includes(query) ||
-                    (donor.patientName
+                    let numA = parseInt(a.bag
