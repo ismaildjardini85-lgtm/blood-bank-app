@@ -27,40 +27,6 @@
             margin: 0 auto;
         }
 
-        #loginOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-
-        .login-card {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .login-card h2 {
-            color: var(--primary-color);
-            margin-bottom: 20px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
         header {
             text-align: center;
             margin-bottom: 25px;
@@ -121,34 +87,6 @@
             transition: border-color 0.2s;
             width: 100%;
             box-sizing: border-box;
-        }
-
-        .password-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        .password-wrapper input {
-            width: 100%;
-            padding-left: 45px;
-            direction: ltr;
-            text-align: left;
-        }
-
-        .toggle-password {
-            position: absolute;
-            left: 5px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            z-index: 10;
         }
 
         .ltr-input {
@@ -276,70 +214,12 @@
             color: #888;
             padding: 25px;
         }
-
-        .error-msg {
-            color: #e74c3c;
-            font-size: 0.85rem;
-            margin-top: 10px;
-            display: none;
-        }
-        
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-        }
-        
-        .logout-btn {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
-        }
     </style>
 </head>
 <body>
 
-    <!-- شاشة تسجيل الدخول / Page de Connexion -->
-    <div id="loginOverlay">
-        <div class="login-card">
-            <h2>تسجيل الدخول / Connexion</h2>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">الرجاء إدخال بيانات الاعتماد للفريق<br><span style="font-size:0.8rem; color:#888;">Veuillez entrer les identifiants</span></p>
-            <form id="loginForm" autocomplete="off">
-                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
-                    <label for="username">اسم المستخدم / Nom d'utilisateur</label>
-                    <input type="text" id="username" class="ltr-input" autocapitalize="none" autocomplete="off" required placeholder="أدخل اسم المستخدم">
-                </div>
-                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
-                    <label for="password">كلمة المرور / Mot de passe</label>
-                    <div class="password-wrapper">
-                        <input type="password" id="password" autocomplete="new-password" required placeholder="أدخل كلمة المرور">
-                        <button type="button" id="togglePasswordBtn" class="toggle-password" title="إظهار / إخفاء كلمة المرور">
-                            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <button type="submit" class="btn">دخول / Entrer</button>
-                <div id="loginError" class="error-msg">بيانات الدخول غير صحيحة!<br>Identifiants incorrects!</div>
-            </form>
-        </div>
-    </div>
-
     <!-- النظام الأساسي / Application Principale -->
-    <div class="container hidden" id="mainApp">
-        <div class="top-bar">
-            <span>مرحباً، <strong>فريق العمل</strong> | Bienvenue, <strong>Équipe</strong></span>
-            <button class="logout-btn" id="logoutBtn">تسجيل الخروج / Déconnexion</button>
-        </div>
-
+    <div class="container" id="mainApp">
         <header>
             <h1>CTS AIN SEFRA<br><span style="font-size: 1rem; font-weight: normal; color: #555;">Gestion des Donneurs de Sang</span></h1>
             <p>سجل سحابي آمن ومشفر ومتزامن لحظياً | Registre cloud sécurisé et synchronisé</p>
@@ -441,78 +321,141 @@
             appId: "1:487349836740:web:755abe8d088bfa4669c291"
         };
 
-        const loginForm = document.getElementById('loginForm');
-        const loginOverlay = document.getElementById('loginOverlay');
-        const mainApp = document.getElementById('mainApp');
-        const loginError = document.getElementById('loginError');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const passwordInput = document.getElementById('password');
-        const togglePasswordBtn = document.getElementById('togglePasswordBtn');
-        const eyeIcon = document.getElementById('eyeIcon');
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // زر إظهار وإخفاء كلمة المرور
-        togglePasswordBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const isPassword = passwordInput.getAttribute('type') === 'password';
-            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-            
-            if (isPassword) {
-                eyeIcon.innerHTML = `
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                `;
-            } else {
-                eyeIcon.innerHTML = `
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                `;
-            }
+        const donorForm = document.getElementById('donorForm');
+        const donorTableBody = document.getElementById('donorTableBody');
+        const searchInput = document.getElementById('searchInput');
+        const editIdInput = document.getElementById('editId');
+        const formTitle = document.getElementById('formTitle');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let allDonors = [];
+
+        onSnapshot(collection(db, "donors"), (snapshot) => {
+            allDonors = [];
+            snapshot.forEach((docSnap) => {
+                allDonors.push({ id: docSnap.id, ...docSnap.data() });
+            });
+
+            allDonors.sort((a, b) => {
+                let numA = parseInt(a.bagId.replace(/\D/g, '')) || 0;
+                let numB = parseInt(b.bagId.replace(/\D/g, '')) || 0;
+                if (numA === numB) {
+                    return a.bagId.localeCompare(b.bagId);
+                }
+                return numA - numB;
+            });
+
+            renderTable(allDonors);
         });
 
-        if (sessionStorage.getItem('isLoggedIn') === 'true') {
-            loginOverlay.classList.add('hidden');
-            mainApp.classList.remove('hidden');
-            initApp();
+        function renderTable(data) {
+            donorTableBody.innerHTML = '';
+            if (data.length === 0) {
+                donorTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">لا توجد بيانات مسجلة حالياً / Aucune donnée enregistrée</td></tr>`;
+                return;
+            }
+
+            data.forEach((donor) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="number-text">${donor.bagId}</span></td>
+                    <td>${donor.donorName}</td>
+                    <td>${donor.patientName || '-'}</td>
+                    <td class="date-cell"><bdo dir="ltr">${donor.birthDate}</bdo></td>
+                    <td>${donor.location}</td>
+                    <td><strong>${donor.bloodGroup}</strong></td>
+                    <td><span class="number-text">${donor.phone}</span></td>
+                    <td class="date-cell"><bdo dir="ltr">${donor.donationDate}</bdo></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="actions-btn edit-btn" onclick="editDonor('${donor.id}')">تعديل / Modifier</button>
+                            <button class="actions-btn" onclick="deleteDonor('${donor.id}')">حذف / Supprimer</button>
+                        </div>
+                    </td>
+                `;
+                donorTableBody.appendChild(tr);
+            });
         }
 
-        loginForm.addEventListener('submit', function(e) {
+        donorForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const u = document.getElementById('username').value.trim().toLowerCase();
-            const p = passwordInput.value.trim();
+            
+            const donorData = {
+                bagId: document.getElementById('bagId').value,
+                donorName: document.getElementById('donorName').value,
+                patientName: document.getElementById('patientName').value,
+                birthDate: document.getElementById('birthDate').value,
+                location: document.getElementById('location').value,
+                bloodGroup: document.getElementById('bloodGroup').value,
+                phone: document.getElementById('phone').value,
+                donationDate: document.getElementById('donationDate').value
+            };
 
-            if (u === "ctsainsefra" && p === "cts2026") {
-                sessionStorage.setItem('isLoggedIn', 'true');
-                loginOverlay.classList.add('hidden');
-                mainApp.classList.remove('hidden');
-                initApp();
-            } else {
-                loginError.style.display = 'block';
+            const currentEditId = editIdInput.value;
+
+            try {
+                if (currentEditId) {
+                    await updateDoc(doc(db, "donors", currentEditId), donorData);
+                    alert("تم تحديث السجل بنجاح / Mis à jour avec succès");
+                    editIdInput.value = "";
+                    formTitle.innerText = "إضافة سجل جديد / Ajouter un Nouveau Enregistrement";
+                    submitBtn.innerText = "حفظ السجل / Enregistrer";
+                    submitBtn.classList.remove('btn-update');
+                } else {
+                    await addDoc(collection(db, "donors"), donorData);
+                }
+                donorForm.reset();
+            } catch (error) {
+                alert("حدث خطأ أثناء الحفظ: " + error.message);
             }
         });
 
-        logoutBtn.addEventListener('click', function() {
-            sessionStorage.removeItem('isLoggedIn');
-            location.reload();
+        window.editDonor = function(id) {
+            const donor = allDonors.find(d => d.id === id);
+            if (donor) {
+                editIdInput.value = donor.id;
+                document.getElementById('bagId').value = donor.bagId || '';
+                document.getElementById('donorName').value = donor.donorName || '';
+                document.getElementById('patientName').value = donor.patientName || '';
+                document.getElementById('birthDate').value = donor.birthDate || '';
+                document.getElementById('location').value = donor.location || '';
+                document.getElementById('bloodGroup').value = donor.bloodGroup || '';
+                document.getElementById('phone').value = donor.phone || '';
+                document.getElementById('donationDate').value = donor.donationDate || '';
+
+                formTitle.innerText = "تعديل السجل / Modifier l'enregistrement";
+                submitBtn.innerText = "تحديث السجل / Mettre à jour";
+                submitBtn.classList.add('btn-update');
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        window.deleteDonor = async function(id) {
+            if (confirm('هل أنت متأكد من حذف هذا السجل؟ / Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {
+                try {
+                    await deleteDoc(doc(db, "donors", id));
+                } catch (error) {
+                    alert("حدث خطأ أثناء الحذف: " + error.message);
+                }
+            }
+        }
+
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const filtered = allDonors.filter(donor => 
+                donor.donorName.toLowerCase().includes(query) ||
+                (donor.patientName && donor.patientName.toLowerCase().includes(query)) ||
+                donor.bagId.toLowerCase().includes(query) ||
+                donor.bloodGroup.toLowerCase().includes(query) ||
+                donor.location.toLowerCase().includes(query)
+            );
+            renderTable(filtered);
         });
+    </script>
 
-        function initApp() {
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-
-            const donorForm = document.getElementById('donorForm');
-            const donorTableBody = document.getElementById('donorTableBody');
-            const searchInput = document.getElementById('searchInput');
-            const editIdInput = document.getElementById('editId');
-            const formTitle = document.getElementById('formTitle');
-            const submitBtn = document.getElementById('submitBtn');
-
-            let allDonors = [];
-
-            onSnapshot(collection(db, "donors"), (snapshot) => {
-                allDonors = [];
-                snapshot.forEach((docSnap) => {
-                    allDonors.push({ id: docSnap.id, ...docSnap.data() });
-                });
-
-                allDonors.sort((a, b) => {
-                    let numA = parseInt(a.bag
+</body>
+</html>
