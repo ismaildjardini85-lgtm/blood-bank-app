@@ -415,10 +415,9 @@
 
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const u = document.getElementById('username').value.trim();
+            const u = document.getElementById('username').value.trim().toLowerCase();
             const p = document.getElementById('password').value.trim();
 
-            // التحقق المبسط والمباشر
             if (u === "ctsainsefra" && p === "cts2026") {
                 sessionStorage.setItem('isLoggedIn', 'true');
                 loginOverlay.classList.add('hidden');
@@ -529,7 +528,7 @@
 
             window.editDonor = function(id) {
                 const donor = allDonors.find(d => d.id === id);
-                if, (donor) {
+                if (donor) {
                     editIdInput.value = donor.id;
                     document.getElementById('bagId').value = donor.bagId || '';
                     document.getElementById('donorName').value = donor.donorName || '';
