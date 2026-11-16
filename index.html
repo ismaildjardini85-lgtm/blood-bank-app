@@ -38,6 +38,8 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            padding: 15px;
+            box-sizing: border-box;
         }
 
         .login-card {
@@ -117,6 +119,37 @@
             font-size: 0.95rem;
             outline: none;
             transition: border-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            padding-left: 40px;
+            direction: ltr;
+            text-align: right;
+        }
+
+        .toggle-password {
+            position: absolute;
+            left: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary-color);
         }
 
         .ltr-input {
@@ -278,14 +311,22 @@
         <div class="login-card">
             <h2>تسجيل الدخول / Connexion</h2>
             <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">الرجاء إدخال بيانات الاعتماد للفريق<br><span style="font-size:0.8rem; color:#888;">Veuillez entrer les identifiants</span></p>
-            <form id="loginForm">
+            <form id="loginForm" autocomplete="off">
                 <div class="form-group" style="margin-bottom: 15px; text-align: right;">
                     <label for="username">اسم المستخدم / Nom d'utilisateur</label>
-                    <input type="text" id="username" autocapitalize="none" required placeholder="ctsainsefra">
+                    <input type="text" id="username" class="ltr-input" autocapitalize="none" autocomplete="off" required placeholder="أدخل اسم المستخدم">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px; text-align: right;">
                     <label for="password">كلمة المرور / Mot de passe</label>
-                    <input type="password" id="password" required placeholder="cts2026">
+                    <div class="password-wrapper">
+                        <input type="password" id="password" autocomplete="new-password" required placeholder="أدخل كلمة المرور">
+                        <button type="button" id="togglePasswordBtn" class="toggle-password" title="إظهار / إخفاء كلمة المرور">
+                            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <button type="submit" class="btn">دخول / Entrer</button>
                 <div id="loginError" class="error-msg">بيانات الدخول غير صحيحة!<br>Identifiants incorrects!</div>
@@ -406,6 +447,27 @@
         const mainApp = document.getElementById('mainApp');
         const loginError = document.getElementById('loginError');
         const logoutBtn = document.getElementById('logoutBtn');
+        const passwordInput = document.getElementById('password');
+        const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+        const eyeIcon = document.getElementById('eyeIcon');
+
+        // زر إظهار وإخفاء كلمة المرور
+        togglePasswordBtn.addEventListener('click', function() {
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+            
+            if (isPassword) {
+                eyeIcon.innerHTML = `
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                `;
+            } else {
+                eyeIcon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                `;
+            }
+        });
 
         if (sessionStorage.getItem('isLoggedIn') === 'true') {
             loginOverlay.classList.add('hidden');
@@ -416,7 +478,7 @@
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const u = document.getElementById('username').value.trim().toLowerCase();
-            const p = document.getElementById('password').value.trim();
+            const p = passwordInput.value.trim();
 
             if (u === "ctsainsefra" && p === "cts2026") {
                 sessionStorage.setItem('isLoggedIn', 'true');
@@ -561,15 +623,4 @@
                 const query = e.target.value.toLowerCase();
                 const filtered = allDonors.filter(donor => 
                     donor.donorName.toLowerCase().includes(query) ||
-                    (donor.patientName && donor.patientName.toLowerCase().includes(query)) ||
-                    donor.bagId.toLowerCase().includes(query) ||
-                    donor.bloodGroup.toLowerCase().includes(query) ||
-                    donor.location.toLowerCase().includes(query)
-                );
-                renderTable(filtered);
-            });
-        }
-    </script>
-
-</body>
-</html>
+                    (donor.patientName
