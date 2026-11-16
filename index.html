@@ -172,8 +172,10 @@
             border-bottom: 1px solid var(--border-color);
         }
 
-        .ltr-cell {
+        /* إصلاح جذري لعرض الأرقام بشكل صحيح ومنتظم تماماً */
+        .number-cell {
             direction: ltr;
+            unicode-bidi: embed;
             text-align: right;
         }
 
@@ -423,14 +425,14 @@
                 data.forEach((donor) => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td class="ltr-cell">${donor.bagId}</td>
+                        <td class="number-cell"><bdo dir="ltr">${donor.bagId}</bdo></td>
                         <td>${donor.donorName}</td>
                         <td>${donor.patientName || '-'}</td>
-                        <td class="ltr-cell">${donor.birthDate}</td>
+                        <td class="number-cell"><bdo dir="ltr">${donor.birthDate}</bdo></td>
                         <td>${donor.location}</td>
                         <td><strong>${donor.bloodGroup}</strong></td>
-                        <td class="ltr-cell">${donor.phone}</td>
-                        <td class="ltr-cell">${donor.donationDate}</td>
+                        <td class="number-cell"><bdo dir="ltr">${donor.phone}</bdo></td>
+                        <td class="number-cell"><bdo dir="ltr">${donor.donationDate}</bdo></td>
                         <td><button class="actions-btn" onclick="deleteDonor('${donor.id}')">حذف / Supprimer</button></td>
                     `;
                     donorTableBody.appendChild(tr);
