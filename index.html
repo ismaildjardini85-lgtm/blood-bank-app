@@ -157,7 +157,6 @@
             font-size: 1rem;
         }
 
-        /* تثبيت اتجاه الجدول بالكامل ليطابق الترتيب الصحيح من اليمين لليسار للأرقام والنصوص */
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -418,6 +417,17 @@
                 snapshot.forEach((docSnap) => {
                     allDonors.push({ id: docSnap.id, ...docSnap.data() });
                 });
+
+                // ترتيب السجلات تلقائياً حسب رقم الكيس (تصاعدياً: 1381, 1382, 1383...)
+                allDonors.sort((a, b) => {
+                    let numA = parseInt(a.bagId.replace(/\D/g, '')) || 0;
+                    let numB = parseInt(b.bagId.replace(/\D/g, '')) || 0;
+                    if (numA === numB) {
+                        return a.bagId.localeCompare(b.bagId);
+                    }
+                    return numA - numB;
+                });
+
                 renderTable(allDonors);
             });
 
@@ -452,7 +462,7 @@
                     bagId: document.getElementById('bagId').value,
                     donorName: document.getElementById('donorName').value,
                     patientName: document.getElementById('patientName').value,
-                    birthDate: document.getElementById('birthDate').value,
+                    birthDate: document.getElementById('birthDate.value') || document.getElementById('birthDate').value,
                     location: document.getElementById('location').value,
                     bloodGroup: document.getElementById('bloodGroup').value,
                     phone: document.getElementById('phone').value,
