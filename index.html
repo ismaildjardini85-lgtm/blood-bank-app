@@ -12,7 +12,6 @@
             --card-bg: #ffffff;
             --text-color: #2c3e50;
             --border-color: #e2e8f0;
-            --accent-red: #e74c3c;
         }
 
         body {
@@ -28,7 +27,6 @@
             margin: 0 auto;
         }
 
-        /* شريط العنوان الطبي الفاخر */
         .header-banner {
             background: linear-gradient(135deg, #c0392b, #8b0000);
             color: white;
@@ -79,7 +77,6 @@
             font-weight: 600;
         }
 
-        /* لوحة الإحصائيات العلوية */
         .stats-dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -114,7 +111,6 @@
             margin-top: 8px;
         }
 
-        /* بطاقة إحصائيات التبرع الشهري العريضة */
         .monthly-stats-card {
             background: var(--card-bg);
             padding: 20px;
@@ -150,7 +146,6 @@
             font-weight: 600;
         }
 
-        /* بطاقات النموذج وجدول البيانات */
         .card {
             background-color: var(--card-bg);
             border-radius: 10px;
@@ -221,6 +216,7 @@
             font-weight: bold;
             margin-top: 15px;
             box-shadow: 0 4px 12px rgba(192, 57, 43, 0.2);
+            width: 100%;
         }
 
         .btn:hover {
@@ -230,9 +226,6 @@
         .btn-update {
             background-color: #27ae60 !important;
             box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
-        }
-        .btn-update:hover {
-            background-color: #219653 !important;
         }
 
         .search-bar {
@@ -311,10 +304,6 @@
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 600;
-            transition: opacity 0.2s;
-        }
-        .actions-btn:hover {
-            opacity: 0.9;
         }
 
         .edit-btn {
@@ -331,7 +320,7 @@
 <body>
 
     <div class="container">
-        <!-- شريط العنوان الاحترافي مع شعار قطرة الدم -->
+        <!-- شريط العنوان -->
         <div class="header-banner">
             <div class="header-title-box">
                 <div class="blood-logo">
@@ -351,12 +340,11 @@
             <div class="header-date-badge" id="currentDateBadge">2026-11-16</div>
         </div>
 
-        <!-- لوحة الإحصائيات (إحصائيات عامة وإحصائيات شهرية تفصيلية لكل الفصائل) -->
+        <!-- إحصائيات لوحة التحكم -->
         <div class="stats-dashboard">
             <div class="stat-card">
                 <div class="stat-card-header">
                     <span>إجمالي المتبرعين / Total Donors</span>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 </div>
                 <div class="stat-card-value" id="totalDonorsCount">0</div>
             </div>
@@ -364,7 +352,6 @@
             <div class="stat-card">
                 <div class="stat-card-header">
                     <span>تبرعات اليوم / Recent Donations</span>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                 </div>
                 <div class="stat-card-value" id="todayDonationsCount">0</div>
             </div>
@@ -479,7 +466,7 @@
         </div>
     </div>
 
-    <!-- برمجة التطبيق والربط السحابي -->
+    <!-- برمجة التطبيق والربط السحابي بـ Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -494,4 +481,203 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(
+        const db = getFirestore(app);
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('currentDateBadge').innerText = todayStr;
+        document.getElementById('donationDate').value = todayStr;
+
+        const donorForm = document.getElementById('donorForm');
+        const donorTableBody = document.getElementById('donorTableBody');
+        const searchInput = document.getElementById('searchInput');
+        const editIdInput = document.getElementById('editId');
+        const formTitle = document.getElementById('formTitle');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let allDonors = [];
+
+        onSnapshot(collection(db, "donors"), (snapshot) => {
+            allDonors = [];
+            snapshot.forEach((docSnap) => {
+                allDonors.push({ id: docSnap.id, ...docSnap.data() });
+            });
+
+            allDonors.sort((a, b) => {
+                let numA = parseInt(a.bagId.replace(/\D/g, '')) || 0;
+                let numB = parseInt(b.bagId.replace(/\D/g, '')) || 0;
+                if (numA === numB) {
+                    return a.bagId.localeCompare(b.bagId);
+                }
+                return numA - numB;
+            });
+
+            updateDashboardStats(allDonors);
+            renderTable(allDonors);
+        }, (error) => {
+            console.error("Firebase Error: ", error);
+            donorTableBody.innerHTML = `<tr><td colspan="9" class="empty-state" style="color: red;">خطأ في الاتصال بقاعدة البيانات!</td></tr>`;
+        });
+
+        function updateDashboardStats(data) {
+            document.getElementById('totalDonorsCount').innerText = data.length;
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayCount = data.filter(d => d.donationDate === today).length;
+            document.getElementById('todayDonationsCount').innerText = todayCount;
+
+            const monthlyMap = {};
+            data.forEach(donor => {
+                if (!donor.donationDate) return;
+                const monthYear = donor.donationDate.substring(0, 7);
+                if (!monthlyMap[monthYear]) {
+                    monthlyMap[monthYear] = { total: 0, 'O+': 0, 'O-': 0, 'A+': 0, 'A-': 0, 'B+': 0, 'B-': 0, 'AB+': 0, 'AB-': 0 };
+                }
+                monthlyMap[monthYear].total++;
+                let bg = donor.bloodGroup;
+                if (monthlyMap[monthYear][bg] !== undefined) {
+                    monthlyMap[monthYear][bg]++;
+                }
+            });
+
+            const monthlyStatsBody = document.getElementById('monthlyStatsBody');
+            monthlyStatsBody.innerHTML = '';
+
+            const sortedMonths = Object.keys(monthlyMap).sort().reverse();
+
+            if (sortedMonths.length === 0) {
+                monthlyStatsBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #94a3b8;">لا توجد بيانات كافية للإحصائيات</td></tr>`;
+                return;
+            }
+
+            sortedMonths.forEach(m => {
+                const stats = monthlyMap[m];
+                const [year, month] = m.split('-');
+                const dateObj = new Date(year, month - 1, 1);
+                const monthName = dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${monthName}</strong></td>
+                    <td><strong>${stats.total}</strong></td>
+                    <td>${stats['O+']}</td>
+                    <td>${stats['O-']}</td>
+                    <td>${stats['A+']}</td>
+                    <td>${stats['A-']}</td>
+                    <td>${stats['B+']}</td>
+                    <td>${stats['B-']}</td>
+                    <td>${stats['AB+']}</td>
+                    <td>${stats['AB-']}</td>
+                `;
+                monthlyStatsBody.appendChild(tr);
+            });
+        }
+
+        function renderTable(data) {
+            donorTableBody.innerHTML = '';
+            if (data.length === 0) {
+                donorTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">لا توجد بيانات مسجلة حالياً / Aucune donnée enregistrée</td></tr>`;
+                return;
+            }
+
+            data.forEach((donor) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="number-text">${donor.bagId}</span></td>
+                    <td>${donor.donorName}</td>
+                    <td>${donor.patientName || '-'}</td>
+                    <td class="date-cell"><bdo dir="ltr">${donor.birthDate}</bdo></td>
+                    <td>${donor.location}</td>
+                    <td><strong>${donor.bloodGroup}</strong></td>
+                    <td><span class="number-text">${donor.phone}</span></td>
+                    <td class="date-cell"><bdo dir="ltr">${donor.donationDate}</bdo></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="actions-btn edit-btn" onclick="editDonor('${donor.id}')">تعديل / Modifier</button>
+                            <button class="actions-btn" onclick="deleteDonor('${donor.id}')">حذف / Supprimer</button>
+                        </div>
+                    </td>
+                `;
+                donorTableBody.appendChild(tr);
+            });
+        }
+
+        donorForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const donorData = {
+                bagId: document.getElementById('bagId').value,
+                donorName: document.getElementById('donorName').value,
+                patientName: document.getElementById('patientName').value,
+                birthDate: document.getElementById('birthDate').value,
+                location: document.getElementById('location').value,
+                bloodGroup: document.getElementById('bloodGroup').value,
+                phone: document.getElementById('phone').value,
+                donationDate: document.getElementById('donationDate').value
+            };
+
+            const currentEditId = editIdInput.value;
+
+            try {
+                if (currentEditId) {
+                    await updateDoc(doc(db, "donors", currentEditId), donorData);
+                    alert("تم تحديث السجل بنجاح / Mis à jour avec succès");
+                    editIdInput.value = "";
+                    formTitle.innerText = "إضافة سجل جديد / Ajouter un Nouveau Enregistrement";
+                    submitBtn.innerText = "حفظ السجل / Enregistrer";
+                    submitBtn.classList.remove('btn-update');
+                } else {
+                    await addDoc(collection(db, "donors"), donorData);
+                }
+                donorForm.reset();
+                document.getElementById('donationDate').value = new Date().toISOString().split('T')[0];
+            } catch (error) {
+                alert("حدث خطأ أثناء الحفظ: " + error.message);
+            }
+        });
+
+        window.editDonor = function(id) {
+            const donor = allDonors.find(d => d.id === id);
+            if (donor) {
+                editIdInput.value = donor.id;
+                document.getElementById('bagId').value = donor.bagId || '';
+                document.getElementById('donorName').value = donor.donorName || '';
+                document.getElementById('patientName').value = donor.patientName || '';
+                document.getElementById('birthDate').value = donor.birthDate || '';
+                document.getElementById('location').value = donor.location || '';
+                document.getElementById('bloodGroup').value = donor.bloodGroup || '';
+                document.getElementById('phone').value = donor.phone || '';
+                document.getElementById('donationDate').value = donor.donationDate || '';
+
+                formTitle.innerText = "تعديل السجل / Modifier l'enregistrement";
+                submitBtn.innerText = "تحديث السجل / Mettre à jour";
+                submitBtn.classList.add('btn-update');
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        window.deleteDonor = async function(id) {
+            if (confirm('هل أنت متأكد من حذف هذا السجل؟ / Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {
+                try {
+                    await deleteDoc(doc(db, "donors", id));
+                } catch (error) {
+                    alert("حدث خطأ أثناء الحذف: " + error.message);
+                }
+            }
+        }
+
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const filtered = allDonors.filter(donor => 
+                donor.donorName.toLowerCase().includes(query) ||
+                (donor.patientName && donor.patientName.toLowerCase().includes(query)) ||
+                donor.bagId.toLowerCase().includes(query) ||
+                donor.bloodGroup.toLowerCase().includes(query) ||
+                donor.location.toLowerCase().includes(query)
+            );
+            renderTable(filtered);
+        });
+    </script>
+
+</body>
+</html>
