@@ -373,8 +373,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const AUTH_USER = "admin";       
-        const AUTH_PASS = "blood2026";   
+        // بيانات الدخول الجديدة
+        const AUTH_USER = "ctsainsefra";       
+        const AUTH_PASS = "cts2026";   
 
         const firebaseConfig = {
             apiKey: "AIzaSyBfy7XI64ckRRc8JJp3th8WMGRua3XDP0s",
@@ -502,4 +503,19 @@
                 }
             }
 
-            searchInput.addEventListener('input', function(e)
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase();
+                const filtered = allDonors.filter(donor => 
+                    donor.donorName.toLowerCase().includes(query) ||
+                    (donor.patientName && donor.patientName.toLowerCase().includes(query)) ||
+                    donor.bagId.toLowerCase().includes(query) ||
+                    donor.bloodGroup.toLowerCase().includes(query) ||
+                    donor.location.toLowerCase().includes(query)
+                );
+                renderTable(filtered);
+            });
+        }
+    </script>
+
+</body>
+</html>
